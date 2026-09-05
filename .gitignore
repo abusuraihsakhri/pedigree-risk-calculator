@@ -3,3 +3,10 @@ __pycache__/
 .venv/
 results.csv
 output.csv
+.env
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/

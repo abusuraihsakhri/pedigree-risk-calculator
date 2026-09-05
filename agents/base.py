@@ -57,7 +57,15 @@ class PHIGuard:
 class AuditTrail:
     """Cryptographic Tamper-Evident HMAC-SHA256 Audit Trail."""
     def __init__(self, secret_key: Optional[str] = None):
-        self.secret_key = (secret_key or os.getenv("AUDIT_SECRET_KEY", "pedigree-risk-calculator-master-audit-key-2026")).encode("utf-8")
+        key = secret_key or os.getenv("AUDIT_SECRET_KEY")
+        if not key:
+            raise SecurityException(
+                "AUDIT_SECRET_KEY environment variable is required. "
+                "Set it before running the application."
+            )
+        if len(key) < 16:
+            raise SecurityException("AUDIT_SECRET_KEY must be at least 16 characters long.")
+        self.secret_key = key.encode("utf-8")
         self.logs: List[Dict[str, Any]] = []
 
     def log(self, actor: str, actor_tier: str, event_type: str, details: Dict[str, Any]) -> Dict[str, Any]:
@@ -83,9 +91,19 @@ class AuditTrail:
         return entry
 
     def verify_integrity(self) -> bool:
+        """Verify the full HMAC chain and detect any tampering."""
         for i, entry in enumerate(self.logs):
+            # Verify chain linkage
             prev = self.logs[i-1]["current_hash"] if i > 0 else "GENESIS_BLOCK_0000000000000000"
             if entry["prev_hash"] != prev:
+                return False
+            # Verify HMAC signature
+            sign_string = (
+                f"{entry['audit_id']}|{entry['timestamp']}|{entry['actor']}|"
+                f"{entry['actor_tier']}|{entry['event_type']}|{entry['payload_hash']}|{entry['prev_hash']}"
+            )
+            expected = hmac.new(self.secret_key, sign_string.encode("utf-8"), hashlib.sha256).hexdigest()
+            if not hmac.compare_digest(entry["current_hash"], expected):
                 return False
         return True
 
@@ -93,21 +111,28 @@ class AuditTrail:
         return self.logs
 
 
-GLOBAL_AUDIT = AuditTrail()
+_GLOBAL_AUDIT: Optional[AuditTrail] = None
+
+
+def _get_global_audit() -> AuditTrail:
+    global _GLOBAL_AUDIT
+    if _GLOBAL_AUDIT is None:
+        _GLOBAL_AUDIT = AuditTrail()
+    return _GLOBAL_AUDIT
 
 
 class AuditLogger:
     @staticmethod
     def log(actor: str, actor_tier: str, event_type: str, details: Dict[str, Any]) -> Dict[str, Any]:
-        return GLOBAL_AUDIT.log(actor, actor_tier, event_type, details)
+        return _get_global_audit().log(actor, actor_tier, event_type, details)
 
     @staticmethod
     def get_trail() -> List[Dict[str, Any]]:
-        return GLOBAL_AUDIT.get_trail()
+        return _get_global_audit().get_trail()
 
     @staticmethod
     def verify_integrity() -> bool:
-        return GLOBAL_AUDIT.verify_integrity()
+        return _get_global_audit().verify_integrity()
 
 
 class ActionExecutor:

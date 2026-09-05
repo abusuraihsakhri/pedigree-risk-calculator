@@ -3,12 +3,17 @@ Automated Pytest Test Suite for Pedigree Risk Calculator.
 Domain: Clinical & Biomedical AI
 Standard: CAP / CLSI / ISO Standards
 """
+import os
 import sys
 from pathlib import Path
+
+# Set required env var before importing agents
+os.environ.setdefault("AUDIT_SECRET_KEY", "test-secret-key-for-pytest-2026")
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
-from agents.base import PHIGuard, AuditLogger, SecurityException
+from agents.base import PHIGuard, AuditLogger, SecurityException, AuditTrail
 from agents.models import SystemTaskPayload, UrgencyLevel, SystemIntegrityStatus
 from agents.workers import InvariantQCWorker, SafetyEscalationWorker, ProtocolConformanceWorker
 from agents.supervisor import SystemSupervisor
@@ -21,6 +26,12 @@ def test_phi_guard_enforcement():
 
     # Clean text passes
     PHIGuard.assert_no_phi("Analytical assay specimen KEY-001 optimal")
+
+
+def test_phi_guard_redaction():
+    redacted = PHIGuard.redact_phi("Contact patient at 555-123-4567")
+    assert "555-123-4567" not in redacted
+    assert "[REDACTED_IDENTIFIER]" in redacted
 
 
 def test_specialized_workers():
@@ -63,3 +74,33 @@ def test_supervisor_consensus_and_audit():
     assert main(["audit", "--task-id", "CLI-TEST-01"]) == 0
     assert main(["chat", "Explain", "specifications"]) == 0
     assert main(["verify-audit"]) == 0
+
+
+def test_audit_trail_requires_secret():
+    """AuditTrail should raise SecurityException without a secret key."""
+    original = os.environ.pop("AUDIT_SECRET_KEY", None)
+    try:
+        with pytest.raises(SecurityException):
+            AuditTrail()
+    finally:
+        if original:
+            os.environ["AUDIT_SECRET_KEY"] = original
+
+
+def test_audit_trail_short_key_rejected():
+    """AuditTrail should reject keys shorter than 16 characters."""
+    with pytest.raises(SecurityException):
+        AuditTrail(secret_key="short")
+
+
+def test_audit_trail_integrity_tampering():
+    """Audit trail should detect tampering."""
+    trail = AuditTrail(secret_key="test-integrity-key-2026")
+    trail.log("test", "tier", "EVENT", {"data": "value1"})
+    trail.log("test", "tier", "EVENT", {"data": "value2"})
+    assert trail.verify_integrity() is True
+
+    # Tamper with an entry
+    if trail.logs:
+        trail.logs[0]["payload_hash"] = "tampered"
+    assert trail.verify_integrity() is False
