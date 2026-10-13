@@ -8,6 +8,8 @@ import argparse
 import csv
 import math
 import sys
+import json
+from inheritance import calculate_recurrence_risk
 
 
 def _safe_float(value, default=0.0):
@@ -130,6 +132,10 @@ def assess_row(row):
     if not isinstance(row, dict):
         return {"error": "Input must be a dictionary"}
     try:
+        if "inheritance" in row:
+            return calculate_recurrence_risk(
+                row["inheritance"], row.get("mother"), row.get("father")
+            )
         # try common lab keys
         if "bilirubin" in row and "creatinine" in row:
             return calculate_meld_na(
@@ -178,14 +184,25 @@ def process_csv(inp, out):
     results = []
     for row in rows:
         res = assess_row(row)
-        merged = {**row, **{k: str(v) for k, v in res.items()}}
+        if "risk" in res:
+            risk = res["risk"]
+            flattened = {
+                f"risk_{outcome}_{group}": str(risk[group][outcome])
+                for group in ("overall", "sons", "daughters")
+                for outcome in ("affected", "unaffected_carrier", "unaffected_noncarrier")
+            }
+            flattened["genotypes_sons"] = json.dumps(res["genotypes"]["sons"], sort_keys=True)
+            flattened["genotypes_daughters"] = json.dumps(res["genotypes"]["daughters"], sort_keys=True)
+            merged = {**row, **flattened}
+        else:
+            merged = {**row, **{k: str(v) for k, v in res.items()}}
         results.append(merged)
     # union fieldnames
     all_keys = set()
     for rr in results:
         all_keys.update(rr.keys())
     # keep original first
-    extra = [k for k in all_keys if k not in fieldnames]
+    extra = sorted(k for k in all_keys if k not in fieldnames)
     try:
         with open(out, "w", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=list(fieldnames) + extra)
@@ -209,6 +226,12 @@ def build_parser():
     s.add_argument("--qt", type=float)
     s.add_argument("--rr", type=float)
     s.add_argument("--hr", type=float)
+    risk = sub.add_parser("risk", help="Mendelian recurrence from known parental genotypes")
+    risk.add_argument("--inheritance", required=True,
+                      choices=["autosomal_dominant", "autosomal_recessive",
+                               "x_linked_dominant", "x_linked_recessive"])
+    risk.add_argument("--mother", required=True)
+    risk.add_argument("--father", required=True)
     b = sub.add_parser("batch", help="batch csv")
     b.add_argument("--input", required=True)
     b.add_argument("--output", required=True)
@@ -219,6 +242,14 @@ def main(argv=None):
     """Main entry point for the pedigree CLI."""
     p = build_parser()
     a = p.parse_args(argv)
+    if a.cmd == "risk":
+        try:
+            print(json.dumps(calculate_recurrence_risk(
+                a.inheritance, a.mother, a.father), indent=2))
+            return 0
+        except ValueError as error:
+            print(f"Error: {error}", file=sys.stderr)
+            return 1
     if a.cmd == "single":
         if a.json:
             import json as _json

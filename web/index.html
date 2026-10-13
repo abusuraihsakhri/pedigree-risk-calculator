@@ -1,236 +1,161 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pedigree Risk Calculator — Operations Console</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #090d16;
-            --card: #111827;
-            --border: #1f293d;
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.25);
-            --text: #f3f4f6;
-            --text-muted: #9ca3af;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #10b981;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            padding: 2rem;
-            min-height: 100vh;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .header-title h1 { font-size: 1.6rem; font-weight: 700; color: #fff; }
-        .header-title p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
-        .badge {
-            display: inline-block;
-            padding: 0.3rem 0.8rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: var(--accent-glow);
-            color: var(--accent);
-            border: 1px solid var(--accent);
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 1.5rem;
-        }
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        .card h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-        input, select, textarea {
-            width: 100%;
-            padding: 0.65rem 0.9rem;
-            background: #0d1322;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: #fff;
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-        input:focus, textarea:focus { outline: none; border-color: var(--accent); }
-        .btn {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 0.7rem 1.4rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            width: 100%;
-        }
-        .btn:hover { background: #2563eb; }
-        .terminal {
-            background: #060911;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: #10b981;
-            height: 380px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-        .metrics-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .metric-box {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-        }
-        .metric-val { font-size: 1.4rem; font-weight: 700; color: #fff; margin-top: 0.25rem; }
-        .metric-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Pedigree Risk Calculator | Mendelian Recurrence</title>
+  <style>
+    :root { font-family: system-ui,-apple-system,Segoe UI,sans-serif; color-scheme:dark; --bg:#0c1422; --panel:#142237; --line:#31425c; --ink:#eef5ff; --muted:#b5c6dc; --accent:#70d4c5; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--bg); line-height:1.5; }
+    .wrap { max-width:1050px; margin:0 auto; padding:clamp(16px,3vw,36px); }
+    header { padding-bottom:18px; border-bottom:1px solid var(--line); margin-bottom:24px; }
+    h1 { margin:0 0 8px; font-size:clamp(1.6rem,3vw,2.15rem); letter-spacing:-.035em; }
+    h2 { font-size:1.13rem; margin:0 0 18px; }
+    h3 { margin:22px 0 9px; font-size:1rem; }
+    p { margin:8px 0; } .muted { color:var(--muted); }
+    .layout { display:grid; grid-template-columns:minmax(270px, .85fr) minmax(0,1.4fr); gap:18px; align-items:start; }
+    .panel { padding:22px; background:var(--panel); border:1px solid var(--line); border-radius:14px; }
+    label { display:block; margin:16px 0 6px; font-weight:600; font-size:.93rem; }
+    select { background:#0b192a; color:var(--ink); border:1px solid #647993; border-radius:8px; padding:11px; width:100%; font:inherit; }
+    select:focus-visible,button:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+    button { margin-top:20px; padding:11px 16px; border:1px solid var(--accent); background:var(--accent); color:#061827; border-radius:9px; font:inherit; font-weight:700; cursor:pointer; }
+    button:hover { filter:brightness(1.07); } button:disabled { opacity:.55; cursor:not-allowed; }
+    .secondary { background:transparent; color:var(--accent); margin-left:8px; }
+    .note { padding:12px 14px; background:#1b3047; border-left:3px solid var(--accent); border-radius:5px; font-size:.88rem; color:var(--muted); }
+    .stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .stat { padding:14px 10px; background:#0b192a; border:1px solid var(--line); border-radius:9px; text-align:center; }
+    .stat strong { font-size:1.5rem; display:block; color:var(--accent); font-variant-numeric:tabular-nums; }
+    .stat span { color:var(--muted); font-size:.78rem; }
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; text-align:left; font-variant-numeric:tabular-nums; font-size:.9rem; }
+    th,td { padding:9px 10px; border-bottom:1px solid var(--line); }
+    th { color:var(--muted); font-weight:600; white-space:nowrap; } td:not(:first-child) { text-align:right; }
+    .error { color:#ffb2b2; min-height:1.5em; }
+    footer { margin-top:22px; font-size:.88rem; color:var(--muted); }
+    @media(max-width:740px) { .layout { grid-template-columns:1fr; } .panel { padding:17px; } .stats { gap:7px; } .stat { padding:10px 4px; } .stat strong { font-size:1.22rem; } .secondary { margin-left:0; } }
+  </style>
 </head>
 <body>
-
-    <div class="header">
-        <div class="header-title">
-            <h1>Pedigree Risk Calculator</h1>
-            <p>Domain: Clinical & Cryptographic AI | Standard: CAP / CLSI / NIST Standards | LabMind-Atlas Architecture</p>
-        </div>
-        <div>
-            <span class="badge">Air-Gapped Active</span>
-            <span class="badge" style="background: rgba(16,185,129,0.2); color: #10b981; border-color: #10b981;">Zero-PHI Guard Active</span>
-        </div>
-    </div>
-
-    <div class="metrics-bar">
-        <div class="metric-box">
-            <div class="metric-label">System Status</div>
-            <div class="metric-val" style="color: var(--success);" id="m-status">OPTIMAL</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Tasks Processed</div>
-            <div class="metric-val" id="m-tasks">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Audit Blocks Signed</div>
-            <div class="metric-val" id="m-audit">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">PHI Interceptions</div>
-            <div class="metric-val" style="color: var(--accent);" id="m-phi">0</div>
-        </div>
-    </div>
-
-    <div class="grid">
-        <div class="card">
-            <h2>⚙️ Dispatch Distributed Component Audit</h2>
-            <div class="form-group">
-                <label>Task / Sample ID</label>
-                <input type="text" id="task_id" value="TASK-2026-LIVE-01">
-            </div>
-            <div class="form-group">
-                <label>Target Identifier</label>
-                <input type="text" id="target_id" value="SPECIMEN-ALPHA-77">
-            </div>
-            <div class="form-group">
-                <label>Primary Measurement / Value</label>
-                <input type="number" id="primary_metric" value="29.4" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Secondary Metric / Kinetic Index</label>
-                <input type="number" id="secondary_metric" value="14.8" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Status / Phenotype Descriptor</label>
-                <input type="text" id="status_descriptor" value="DISCORDANT_ANOMALY">
-            </div>
-            <div class="form-group">
-                <label><input type="checkbox" id="is_critical" checked> Trigger Emergency / Critical Flag</label>
-            </div>
-            <button class="btn" onclick="runAudit()">Execute Distributed Component Audit</button>
-        </div>
-
-        <div class="card">
-            <h2>📊 Real-Time Consensus Dossier & Audit Log</h2>
-            <div class="terminal" id="outputConsole">// Pedigree Risk Calculator Operations Console Ready
-// Connection established with Air-Gapped Supervisor
-// Cryptographic HMAC-SHA256 audit ledger loaded.
-// Ready for live task payload dispatch...</div>
-        </div>
-    </div>
-
-    <script>
-        async function runAudit() {
-            const consoleEl = document.getElementById('outputConsole');
-            consoleEl.innerText = "// Dispatching task across specialized workers...
-// Invoking InvariantQCWorker, SafetyEscalationWorker, ProtocolWorker...";
-
-            const payload = {
-                task_id: document.getElementById('task_id').value,
-                target_identifier: document.getElementById('target_id').value,
-                primary_metric: parseFloat(document.getElementById('primary_metric').value),
-                secondary_metric: parseFloat(document.getElementById('secondary_metric').value),
-                status_descriptor: document.getElementById('status_descriptor').value,
-                is_critical_flag: document.getElementById('is_critical').checked
-            };
-
-            try {
-                const res = await fetch('/api/audit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                consoleEl.innerText = JSON.stringify(data, null, 2);
-                document.getElementById('m-tasks').innerText = parseInt(document.getElementById('m-tasks').innerText) + 1;
-                document.getElementById('m-audit').innerText = parseInt(document.getElementById('m-audit').innerText) + 1;
-            } catch (err) {
-                consoleEl.innerText = "// Offline / Simulation Output:\n" + JSON.stringify({
-                    dossier_id: "DOSSIER-SIM-" + Math.floor(Math.random()*10000),
-                    system: "pedigree-risk-calculator",
-                    domain: "Clinical & Cryptographic AI",
-                    task_id: payload.task_id,
-                    overall_urgency: payload.is_critical_flag ? "CRITICAL_STAT_PANIC" : "ELEVATED_RISK",
-                    integrity_status: "DISCORDANT_ANOMALY",
-                    alerts: [
-                        { worker: "InvariantQCWorker", alert: "Primary metric exceeds upper reference bound" },
-                        { worker: "SafetyEscalationWorker", alert: "Critical emergency interlock flag active" }
-                    ],
-                    audit_hash: "HMAC_SHA256_e83f9a72b941d6c381f9"
-                }, null, 2);
-            }
-        }
-    </script>
+<main class="wrap">
+  <header>
+    <h1>Pedigree Risk Calculator</h1>
+    <p class="muted">Mendelian recurrence probabilities from <strong>known parental genotypes</strong> · Runs entirely in your browser</p>
+  </header>
+  <div class="layout">
+    <section class="panel" aria-labelledby="input-title">
+      <h2 id="input-title">Parental genotypes</h2>
+      <form id="risk-form">
+        <label for="mode">Inheritance pattern</label>
+        <select id="mode" name="inheritance">
+          <option value="autosomal_dominant">Autosomal dominant</option>
+          <option value="autosomal_recessive" selected>Autosomal recessive</option>
+          <option value="x_linked_dominant">X-linked dominant</option>
+          <option value="x_linked_recessive">X-linked recessive</option>
+        </select>
+        <label for="mother">Mother's genotype</label>
+        <select id="mother" name="mother"></select>
+        <label for="father">Father's genotype</label>
+        <select id="father" name="father"></select>
+        <p id="notation" class="note"></p>
+        <button type="submit">Calculate recurrence</button>
+      </form>
+      <p id="error" class="error" role="alert"></p>
+    </section>
+    <section class="panel" aria-labelledby="result-title">
+      <h2 id="result-title">Offspring probabilities</h2>
+      <div class="stats" aria-live="polite">
+        <div class="stat"><strong id="overall-affected">—</strong><span>Affected · all births</span></div>
+        <div class="stat"><strong id="sons-affected">—</strong><span>Affected · sons</span></div>
+        <div class="stat"><strong id="daughters-affected">—</strong><span>Affected · daughters</span></div>
+      </div>
+      <h3>Outcome distribution</h3>
+      <div class="table-wrap"><table><thead><tr><th>Outcome</th><th>All births</th><th>Sons</th><th>Daughters</th></tr></thead><tbody id="risk-rows"></tbody></table></div>
+      <h3>Offspring genotype distribution</h3>
+      <div class="table-wrap"><table><thead><tr><th>Genotype</th><th>Sons</th><th>Daughters</th></tr></thead><tbody id="genotype-rows"></tbody></table></div>
+      <button id="export" type="button" class="secondary" disabled>Export result (JSON)</button>
+    </section>
+  </div>
+  <footer>
+    <p><strong>Model scope:</strong> Single locus; known parental genotypes; complete penetrance; Mendelian segregation; assumed 1:1 offspring sex ratio. No de novo variation, mosaicism, reduced penetrance, variable expressivity, linkage, or pedigree-based posterior genotype inference. All-birth probabilities average the two sex-specific distributions.</p>
+    <p><strong>Interpretation:</strong> Unaffected carrier denotes heterozygous carriers of an autosomal recessive allele or females heterozygous for an X-linked recessive allele. Risk estimates are per pregnancy, not predictions for a specific child. Educational and research use only; not a substitute for genetic counselling.</p>
+    <p><strong>Privacy:</strong> No patient identifiers are requested; calculations run locally. This interface does not send data to a server or store it in browser storage.</p>
+  </footer>
+</main>
+<script type="module">
+  import { calculateRisk, genotypeOptions } from './risk.mjs';
+  const byId = id => document.getElementById(id);
+  const form = byId('risk-form'), mode = byId('mode');
+  let lastResult = null;
+  const format = probability => (probability * 100).toFixed(1) + '%';
+  function populate(select, values, selected) {
+    select.replaceChildren(...values.map(value => {
+      const option = document.createElement('option');
+      option.value = value; option.textContent = value;
+      return option;
+    }));
+    if (selected && values.includes(selected)) select.value = selected;
+  }
+  function updateGenotypes() {
+    const options = genotypeOptions(mode.value);
+    const autosomal = mode.value.startsWith('autosomal');
+    populate(byId('mother'), options.mother, autosomal ? 'Aa' : 'XAXa');
+    populate(byId('father'), options.father, autosomal ? 'Aa' : 'XAY');
+    byId('notation').textContent = autosomal
+      ? mode.value === 'autosomal_dominant'
+        ? 'A = dominant disease allele; a = normal allele. Aa and AA are affected under this model.'
+        : 'a = recessive disease allele; A = normal allele. Aa is an unaffected carrier; aa is affected.'
+      : mode.value === 'x_linked_dominant'
+        ? 'Xa = dominant disease-variant X chromosome; XA = normal X. One Xa causes the modeled phenotype.'
+        : 'Xa = recessive disease-variant X chromosome; XA = normal X. XAXa females are unaffected carriers.';
+  }
+  function fillRows(body, rows) {
+    const fragment = document.createDocumentFragment();
+    for (const values of rows) {
+      const tr = document.createElement('tr');
+      values.forEach(value => {
+        const td = document.createElement('td');
+        td.textContent = String(value);
+        tr.append(td);
+      });
+      fragment.append(tr);
+    }
+    body.replaceChildren(fragment);
+  }
+  function render(result) {
+    byId('overall-affected').textContent = format(result.risk.overall.affected);
+    byId('sons-affected').textContent = format(result.risk.sons.affected);
+    byId('daughters-affected').textContent = format(result.risk.daughters.affected);
+    const labels = { affected:'Affected', unaffected_carrier:'Unaffected carrier', unaffected_noncarrier:'Unaffected noncarrier' };
+    fillRows(byId('risk-rows'), Object.entries(labels).map(([key,label]) => [label,format(result.risk.overall[key]), format(result.risk.sons[key]), format(result.risk.daughters[key])]));
+    const names = [...new Set([...Object.keys(result.genotypes.sons), ...Object.keys(result.genotypes.daughters)])];
+    fillRows(byId('genotype-rows'), names.map(g => [g,format(result.genotypes.sons[g] || 0),format(result.genotypes.daughters[g] || 0)]));
+    byId('export').disabled = false;
+  }
+  function calculate() {
+    byId('error').textContent = '';
+    try {
+      lastResult = calculateRisk(mode.value, byId('mother').value, byId('father').value);
+      render(lastResult);
+    } catch (err) {
+      lastResult = null;
+      byId('export').disabled = true;
+      byId('error').textContent = err.message;
+    }
+  }
+  mode.addEventListener('change', () => { updateGenotypes(); calculate(); });
+  byId('mother').addEventListener('change', calculate);
+  byId('father').addEventListener('change', calculate);
+  form.addEventListener('submit', event => { event.preventDefault(); calculate(); });
+  byId('export').addEventListener('click', () => {
+    if (!lastResult) return;
+    const blob = new Blob([JSON.stringify(lastResult,null,2) + '\n'], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'pedigree-recurrence-result.json'; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+  updateGenotypes(); calculate();
+</script>
 </body>
 </html>

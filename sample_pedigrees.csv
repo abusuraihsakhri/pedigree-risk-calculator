@@ -1,0 +1,5 @@
+case_id,inheritance,mother,father
+AR-carriers,autosomal_recessive,Aa,Aa
+AD-heterozygote,autosomal_dominant,Aa,aa
+XLR-carrier-mother,x_linked_recessive,XAXa,XAY
+XLD-affected-father,x_linked_dominant,XAXA,XaY
