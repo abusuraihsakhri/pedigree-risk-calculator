@@ -184,7 +184,18 @@ def process_csv(inp, out):
     results = []
     for row in rows:
         res = assess_row(row)
-        merged = {**row, **{k: str(v) for k, v in res.items()}}
+        if "risk" in res:
+            risk = res["risk"]
+            flattened = {
+                f"risk_{outcome}_{group}": str(risk[group][outcome])
+                for group in ("overall", "sons", "daughters")
+                for outcome in ("affected", "unaffected_carrier", "unaffected_noncarrier")
+            }
+            flattened["genotypes_sons"] = json.dumps(res["genotypes"]["sons"], sort_keys=True)
+            flattened["genotypes_daughters"] = json.dumps(res["genotypes"]["daughters"], sort_keys=True)
+            merged = {**row, **flattened}
+        else:
+            merged = {**row, **{k: str(v) for k, v in res.items()}}
         results.append(merged)
     # union fieldnames
     all_keys = set()
