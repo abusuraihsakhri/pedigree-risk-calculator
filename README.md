@@ -1,179 +1,78 @@
 # Pedigree Risk Calculator
 
-> **Domain:** Clinical Decision Support & Biomedical Computing
-> **Reference Guidelines & Standards:** `Standard Clinical Formulations & ISO/IEC Quality Frameworks`
+A Mendelian recurrence-probability calculator for **known parental genotypes**, with a self-contained browser application, a Python CLI, CSV batch processing, and an optional FastAPI endpoint.
 
-<div align="center">
+The calculator models **autosomal dominant (AD)**, **autosomal recessive (AR)**, **X-linked dominant (XLD)** and **X-linked recessive (XLR)** inheritance. It reports offspring genotype frequencies and affected/unaffected probabilities for sons, daughters, and all births.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
-![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
-![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
+> **Scope:** This is conditional single-locus Mendelian arithmetic, **not** a generalized pedigree-analysis engine. It does not infer genotypes from family history, calculate Bayesian carrier probabilities, or estimate clinical disease penetrance. Educational/research use only; genetic counselling is required for patient-specific interpretation.
 
-</div>
+## Browser application
 
----
+Serve the static folder with any local HTTP server (ES modules require HTTP rather than opening the HTML directly):
 
-## 📖 What It Does
+\`\`\`bash
+python -m http.server 8080 --directory web
+\`\`\`
 
-Pedigree Risk Calculator computes autosomal dominant/recessive and X-linked recurrence risk from pedigree trios. It also provides clinical calculation modules for MELD-Na, QTc, BMI z-scores, HbA1c/eAG conversion, and APRI/FIB-4 liver fibrosis scores.
+Open http://localhost:8080/ and select an inheritance pattern and both parental genotypes. Results update immediately. The JSON export contains the selected genotypes, sex-specific genotype and risk distributions, and model assumptions.
 
-Built with Python stdlib for core calculations, with optional FastAPI REST server and enterprise agent-based supervision.
+The browser calculation needs **no server-side Python, API keys, Pyodide, external fonts, or network calls**. GitHub Pages deployment is defined in \`.github/workflows/pages.yml\`; publishing depends on Pages being enabled and a successful deployment.
 
----
+## Python CLI
 
-## ⚙️ Key Capabilities & Algorithmic Modules
+Requires Python 3.10+; the inheritance engine itself uses only the standard library.
 
-### 🔬 Clinical Calculation Functions
+\`\`\`bash
+python pedigree.py risk --inheritance autosomal_recessive --mother Aa --father Aa
+python pedigree.py risk --inheritance autosomal_dominant --mother Aa --father aa
+python pedigree.py risk --inheritance x_linked_recessive --mother XAXa --father XAY
+python pedigree.py risk --inheritance x_linked_dominant --mother XAXA --father XaY
+python pedigree.py batch --input sample_pedigrees.csv --output results.csv
+\`\`\`
 
-- **`calculate_score()`** — Generic weighted sum of numeric inputs
-- **`calculate_meld_na()`** — MELD-Na score for liver disease severity
-- **`calculate_qtc()`** — QTc (corrected QT interval) using Bazett's formula
-- **`calculate_bmi_z()`** — BMI and approximate z-score for pediatric patients
-- **`convert_hba1c()`** — Convert between HbA1c (%) and estimated average glucose (mg/dL)
-- **`calculate_apri_fib4()`** — APRI and FIB-4 scores for liver fibrosis assessment
-- **`assess_row()`** — Routes data rows to the appropriate calculator based on field names
+The AR \`Aa × Aa\` cross yields 25% affected, 50% unaffected carriers, and 25% unaffected noncarriers per pregnancy. The XLR \`XAXa × XAY\` cross yields 50% affected sons and 50% unaffected-carrier daughters, corresponding to 25% affected across all births when a 1:1 sex ratio is assumed.
 
-### 🏗️ Enterprise Features
+The batch CSV has \`inheritance,mother,father\` columns and exports flattened probability columns plus genotype distributions. See [sample_pedigrees.csv](sample_pedigrees.csv). Invalid genotypes raise an error in the \`risk\` command or produce an \`error\` field per CSV row.
 
-- **FastAPI REST Server** — OpenAPI 3.1 endpoints for task evaluation
-- **Multi-Agent Supervision** — InvariantQC, Safety Escalation, and Protocol Conformance workers
-- **HMAC-SHA256 Audit Trail** — Cryptographically signed, tamper-evident logs
-- **Zero-PHI Outbound Guard** — Blocks SSNs, MRNs, phone numbers, and patient identifiers
+### Allele conventions
 
----
+| Inheritance | Mother | Father | Disease allele |
+| --- | --- | --- | --- |
+| AD | AA, Aa, aa | AA, Aa, aa | A (dominant) |
+| AR | AA, Aa, aa | AA, Aa, aa | a (recessive) |
+| XLD | XAXA, XAXa, XaXa | XAY, XaY | Xa (dominant) |
+| XLR | XAXA, XAXa, XaXa | XAY, XaY | Xa (recessive) |
 
-## 🚀 Installation
+Here \`XAXa\` represents a female heterozygote, while \`XaY\` represents a male hemizygote for the disease variant. **Unaffected carrier** is used only where the modeled variant is recessive.
 
-```bash
-# Clone the repository
-git clone https://github.com/abusuraihsakhri/pedigree-risk-calculator.git
-cd pedigree-risk-calculator
+## Optional backend and legacy tools
 
-# Create a virtual environment (recommended)
-python -m venv .venv
-.venv\Scripts\activate  # Windows
-# source .venv/bin/activate  # macOS/Linux
+Install the bounded dependencies and launch the local API:
 
-# Install dependencies
-pip install fastapi uvicorn pydantic pytest
-```
-
-### Environment Configuration
-
-```bash
-# Copy the example environment file
-cp .env.example .env
-
-# Edit .env and set your AUDIT_SECRET_KEY (minimum 16 characters)
-```
-
----
-
-## 💻 CLI Quickstart & Usage
-
-### 1. Single Calculation
-```bash
-python pedigree.py single --bili 2.5 --creat 1.2 --inr 1.5 --na 135
-python pedigree.py single --qt 420 --hr 72
-python pedigree.py single --weight_kg 70 --height_cm 175 --age 96
-```
-
-### 2. Batch CSV Processing
-```bash
-python pedigree.py batch --input sample.csv --output results.csv
-```
-
-### 3. Enterprise CLI (requires AUDIT_SECRET_KEY)
-```bash
-# Set environment variable first
-export AUDIT_SECRET_KEY="your-secret-key-here"  # Linux/macOS
-set AUDIT_SECRET_KEY=your-secret-key-here       # Windows
-
-# Run audit
-python cli.py audit --task-id TASK-001
-
-# Batch process with audit trail
-python cli.py batch -i sample.csv -o results.csv
-
-# Verify audit integrity
-python cli.py verify-audit
-```
-
-### 4. Launch REST API Server
-```bash
+\`\`\`bash
+python -m pip install -r requirements.txt
 python cli.py serve --host 127.0.0.1 --port 8000
-```
+\`\`\`
 
----
+The UI is available at http://127.0.0.1:8000/, and \`POST /api/risk\` accepts \`{"inheritance":"autosomal_recessive","mother":"Aa","father":"Aa"}\`. Interactive API documentation is at \`/docs\`.
 
-## 🛡️ Security & Enterprise Architecture
+The repository also retains its pre-existing clinical calculations (\`pedigree.py single\`) and separate prototype \`cli.py\` audit/agent workflows. These are **not validated clinical decision-support models**. In particular, its pediatric BMI z-score is only an approximation, and its generic score is not a clinical recurrence model. The audit component requires \`AUDIT_SECRET_KEY\` (at least 16 characters); see \`.env.example\`. Its PHI-pattern filter is not comprehensive de-identification, and the mock chat service performs no real model inference. Do not expose the optional audit API publicly or send patient identifiers to it without an independent security/privacy review.
 
-* **Zero-PHI Outbound Interceptor:** Active regex inspection blocking SSNs, MRNs, phone numbers, and patient identifiers.
-* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition.
-* **Required Secret Key:** `AUDIT_SECRET_KEY` environment variable must be set (minimum 16 characters).
+## Model assumptions and privacy
 
----
+Calculations assume a single independent locus, complete penetrance, equal parental allele segregation and a 1:1 male/female birth ratio. No de novo mutations, gonadal mosaicism, variable expressivity, linkage, selection or genotype uncertainty are modeled. Sex-specific probabilities are conditional on offspring sex; all-birth probabilities weight sons and daughters equally.
 
-## 🧪 Testing & Verification
+The browser version does not request identifiers, use browser storage, or transmit inputs to a server. Export files are generated locally. In contrast, the optional API processes submitted data in the Python server process and its audit component retains an in-memory trail.
 
-```bash
-# Set test environment variable
-export AUDIT_SECRET_KEY="test-secret-key-for-pytest-2026"  # Linux/macOS
-set AUDIT_SECRET_KEY=test-secret-key-for-pytest-2026       # Windows
+## Testing and development
 
-# Run the full test suite
-pytest -v
-```
+\`\`\`bash
+python -m pip install -r requirements.txt
+python -m pytest -q
+node --test web/test-risk.mjs
+python -m compileall -q agents cli.py pedigree.py inheritance.py
+\`\`\`
 
-Execute high-throughput batch simulation benchmarks:
+CI runs the Python test suite on Python 3.10–3.12 and Node's browser-math tests. The frontend uses modern HTML/CSS and standard JavaScript ES modules (current Chromium, Firefox and Safari).
 
-```bash
-python simulator.py 1000
-```
-
----
-
-## 🐳 Container Deployment
-
-```bash
-# Copy and configure environment
-cp .env.example .env
-# Edit .env with your AUDIT_SECRET_KEY
-
-# Build and run with Docker Compose
-docker-compose up --build
-
-# Or with Docker directly
-docker build -t pedigree-risk-calculator .
-docker run -p 8000:8000 --env-file .env pedigree-risk-calculator
-```
-
----
-
-## 📁 Project Structure
-
-```
-pedigree-risk-calculator/
-├── pedigree.py          # Core calculation modules (stdlib only)
-├── cli.py               # Enterprise CLI with agent supervision
-├── enrichment.py        # Enrichment engine suite
-├── simulator.py         # High-throughput simulation testing
-├── agents/              # Enterprise agent framework
-│   ├── base.py          # PHI Guard, Audit Trail, Security
-│   ├── models.py        # Pydantic data models
-│   ├── supervisor.py    # Multi-agent orchestration
-│   ├── workers.py       # Specialized domain workers
-│   ├── api.py           # FastAPI REST endpoints
-│   ├── metrics.py       # Prometheus metrics
-│   ├── learning.py      # Bayesian calibration engine
-│   ├── llm_factory.py   # LLM provider abstraction
-│   └── streamer.py      # WebSocket telemetry
-├── tests/               # Test suite
-├── web/                 # Operations dashboard
-├── Dockerfile           # Container definition
-├── docker-compose.yml   # Multi-service orchestration
-└── .env.example         # Environment variable template
-```
+**License:** [MIT](LICENSE).
