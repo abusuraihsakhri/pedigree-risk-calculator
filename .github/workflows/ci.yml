@@ -9,6 +9,8 @@ on:
 jobs:
   test-and-audit:
     runs-on: ubuntu-latest
+    env:
+      AUDIT_SECRET_KEY: test-ci-audit-signing-key-not-for-production
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
@@ -24,13 +26,21 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install fastapi uvicorn pydantic pytest
+        pip install -r requirements.txt
 
     - name: Run Pytest Suite
       run: |
         pytest -v
 
-    - name: Security SAST & Zero-PHI Audit
+    - name: Check Python syntax and Mendelian CLI
+      run: |
+        python -m compileall -q agents pedigree.py inheritance.py cli.py
+        python pedigree.py risk --inheritance autosomal_recessive --mother Aa --father Aa
+
+    - name: Check browser calculator
+      run: node --test web/test-risk.mjs
+
+    - name: Security smoke checks (not a comprehensive SAST scan)
       run: |
         python -c "
         from agents.base import PHIGuard, AuditLogger
