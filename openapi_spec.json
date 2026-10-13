@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pedigree Risk Calculator API",
-    "description": "Enterprise Distributed Component Platform (Clinical & Cryptographic AI) adhering to CAP / CLSI / NIST Standards.",
+    "description": "Prototype audit API plus deterministic Mendelian recurrence probabilities from known parental genotypes. Not validated for clinical decisions.",
     "version": "3.0.0-ENTERPRISE",
     "contact": {
       "name": "Dr. Abu Suraih Sakhri",
@@ -22,7 +22,7 @@
     },
     "/metrics": {
       "get": {
-        "summary": "Prometheus operational metrics",
+        "summary": "Return basic JSON process counters",
         "responses": {
           "200": {
             "description": "Prometheus text metrics"
@@ -76,7 +76,7 @@
     },
     "/api/chat": {
       "post": {
-        "summary": "Air-gapped supervisory conversational assistant",
+        "summary": "Return deterministic mock response (no external model inference)",
         "requestBody": {
           "content": {
             "application/json": {
@@ -107,6 +107,52 @@
         "responses": {
           "200": {
             "description": "Cryptographic audit trail"
+          }
+        }
+      }
+    },
+    "/api/risk": {
+      "post": {
+        "summary": "Calculate known-genotype Mendelian recurrence probabilities",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "inheritance": {
+                    "type": "string",
+                    "enum": [
+                      "autosomal_dominant",
+                      "autosomal_recessive",
+                      "x_linked_dominant",
+                      "x_linked_recessive"
+                    ]
+                  },
+                  "mother": {
+                    "type": "string"
+                  },
+                  "father": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "inheritance",
+                  "mother",
+                  "father"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sex-stratified genotype probabilities and affected/unaffected distributions"
+          },
+          "422": {
+            "description": "Invalid inheritance pattern or parental genotypes"
           }
         }
       }
