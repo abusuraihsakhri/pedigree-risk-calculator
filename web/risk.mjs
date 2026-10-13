@@ -7,7 +7,7 @@ export const modes = {
 };
 
 export const genotypeOptions = (mode) => {
-  if (!(mode in modes)) throw new Error('Invalid inheritance mode');
+  if (!Object.hasOwn(modes, mode)) throw new Error('Invalid inheritance mode');
   return mode.startsWith('autosomal')
     ? { mother: ['AA', 'Aa', 'aa'], father: ['AA', 'Aa', 'aa'] }
     : { mother: ['XAXA', 'XAXa', 'XaXa'], father: ['XAY', 'XaY'] };
