@@ -3,6 +3,9 @@ FastAPI REST API Server for Pedigree Risk Calculator.
 """
 from typing import Dict, Any, List
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
+from inheritance import calculate_recurrence_risk
 from pydantic import BaseModel
 from .base import AuditLogger, PHIGuard
 from .models import SystemTaskPayload, ConsensusDossier
@@ -19,6 +22,21 @@ app = FastAPI(
 
 class ChatRequest(BaseModel):
     query: str
+
+
+class RiskRequest(BaseModel):
+    inheritance: str
+    mother: str
+    father: str
+
+
+@app.post("/api/risk")
+def api_risk(req: RiskRequest):
+    """Known-genotype Mendelian recurrence; independent of the audit workers."""
+    try:
+        return calculate_recurrence_risk(req.inheritance, req.mother, req.father)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
 
 
 @app.get("/health")
@@ -53,3 +71,7 @@ def api_chat(req: ChatRequest):
 @app.get("/api/audit/logs")
 def api_audit_logs():
     return {"audit_trail": AuditLogger.get_trail(), "verified": AuditLogger.verify_integrity()}
+
+
+# Serve the same static, no-backend-required UI when running the API locally.
+app.mount("/", StaticFiles(directory=Path(__file__).resolve().parent.parent / "web", html=True), name="web")
