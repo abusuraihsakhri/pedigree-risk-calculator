@@ -56,3 +56,22 @@ def test_probabilities_sum_to_one(mode, mom, dad):
         assert sum(res["risk"][sex].values()) == pytest.approx(1)
     for sex in ("sons", "daughters"):
         assert sum(res["genotypes"][sex].values()) == pytest.approx(1)
+
+
+def test_batch_csv_exports_scalar_probabilities(tmp_path):
+    import csv
+    from pedigree import process_csv
+    source = tmp_path / "cases.csv"
+    output = tmp_path / "results.csv"
+    source.write_text(
+        "case_id,inheritance,mother,father\n"
+        "case1,autosomal_recessive,Aa,Aa\n",
+        encoding="utf-8"
+    )
+    process_csv(str(source), str(output))
+    with output.open(newline="", encoding="utf-8") as file:
+        rows = list(csv.DictReader(file))
+    assert len(rows) == 1
+    assert rows[0]["risk_affected_overall"] == "0.25"
+    assert rows[0]["risk_unaffected_carrier_overall"] == "0.5"
+    assert rows[0]["genotypes_sons"] == '{"AA": 0.25, "Aa": 0.5, "aa": 0.25}'
