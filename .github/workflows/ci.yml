@@ -40,11 +40,16 @@ jobs:
     - name: Check browser calculator
       run: node --test web/test-risk.mjs
 
-    - name: Security smoke checks (not a comprehensive SAST scan)
+    - name: PHI-pattern and HMAC chain smoke test
       run: |
-        python -c "
-        from agents.base import PHIGuard, AuditLogger
-        import pytest
-        assert AuditLogger.verify_integrity() is True
-        print('Security & Zero-PHI Audit Passed!')
-        "
+        python - <<'PY'
+        from agents.base import PHIGuard, AuditLogger, SecurityException
+        try:
+            PHIGuard.assert_no_phi("Patient MRN-994827 test")
+        except SecurityException:
+            pass
+        else:
+            raise AssertionError("Expected MRN pattern to be blocked")
+        AuditLogger.log("ci", "test", "CHECK", {"ok": True})
+        assert AuditLogger.verify_integrity()
+        PY
