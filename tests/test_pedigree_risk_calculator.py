@@ -104,3 +104,22 @@ def test_audit_trail_integrity_tampering():
     if trail.logs:
         trail.logs[0]["payload_hash"] = "tampered"
     assert trail.verify_integrity() is False
+
+
+def test_batch_boolean_parser():
+    from cli import parse_csv_bool
+    assert parse_csv_bool("False") is False
+    assert parse_csv_bool("0") is False
+    assert parse_csv_bool("yes") is True
+    assert parse_csv_bool("1") is True
+    with pytest.raises(ValueError):
+        parse_csv_bool("perhaps")
+
+
+def test_risk_cli(capsys):
+    from pedigree import main as pedigree_main
+    assert pedigree_main(["risk", "--inheritance", "autosomal_recessive",
+                          "--mother", "Aa", "--father", "Aa"]) == 0
+    assert '"affected": 0.25' in capsys.readouterr().out
+    assert pedigree_main(["risk", "--inheritance", "x_linked_recessive",
+                          "--mother", "AA", "--father", "XAY"]) == 1
